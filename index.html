@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Gửi cậu 💌</title>
+<style>
+  *{box-sizing:border-box;margin:0}
+  body{min-height:100vh;min-height:100dvh;display:grid;place-items:center;overflow:hidden;text-align:center;
+    font-family:"Segoe UI",system-ui,sans-serif;color:#ffd3e1;
+    background:radial-gradient(circle at 50% 40%,#2a1030,#0b0613 70%);}
+  canvas{position:fixed;inset:0;z-index:0;width:100%;height:100%;touch-action:none;cursor:grab}
+  canvas.bg{pointer-events:none}
+  #stage{position:fixed;left:0;right:0;bottom:7vh;z-index:2;pointer-events:none;padding:0 20px;transition:opacity .6s}
+  #stage>*{pointer-events:auto}
+  #hint{font-size:1.05rem;opacity:.85;animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.4}}
+  #ask{display:none}
+  #ask p{min-height:0;margin-bottom:6px}
+  .screen{display:none;position:relative;padding:24px;max-width:480px;z-index:1;text-shadow:0 0 18px #ff4d8d88;animation:in .8s}
+  .screen.on{display:block}
+  @keyframes in{from{opacity:0;transform:translateY(20px)}}
+  h1{color:#fff;font-size:1.8rem;margin-bottom:12px}
+  p{line-height:1.7;font-size:1.1rem;min-height:9em}
+  button{font:inherit;font-size:1.1rem;border:0;border-radius:99px;padding:12px 28px;margin:8px;
+    cursor:pointer;background:#e8567f;color:#fff;box-shadow:0 0 22px #ff4d8d99;transition:transform .2s}
+  button:hover{transform:scale(1.06)}
+  #no,#later{background:#ffffff1f;color:#ffd3e1;box-shadow:none;border:1px solid #ffffff55}
+  #no{position:relative}
+  #snd{position:fixed;top:14px;right:14px;z-index:5;display:none;padding:8px 14px;margin:0;font-size:1.2rem}
+  #song{position:fixed;top:22px;left:14px;z-index:5;display:none;font-size:.9rem;opacity:.8;text-align:left;max-width:60vw}
+  #yt{position:fixed;left:-9999px;width:1px;height:1px}
+  .fl{position:fixed;bottom:-40px;pointer-events:none;z-index:3;animation:up linear forwards}
+  @keyframes up{to{transform:translateY(-110vh) rotate(40deg);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="yt"></div>
+<div id="song">🎵 Bài này để dành cho <span class="name"></span></div>
+<button id="snd" onclick="toggleMusic()">🔊</button>
+
+<div id="stage">
+  <div id="hint">Chạm vào để xem điều bất ngờ ✨ (kéo để xoay)</div>
+  <div id="ask">
+    <p id="asktxt">Cậu có muốn mở trái tim này ra không? 💗</p>
+    <button id="open" onclick="openHeart()">Mở ra 💖</button>
+    <button id="later" onclick="later()">Chưa đâu</button>
+  </div>
+</div>
+
+<div class="screen" id="s2">
+  <h1>Gửi <span class="name"></span>,</h1>
+  <p id="msg"></p>
+  <button id="next" style="display:none" onclick="go('s3')">Tiếp nữa nè →</button>
+</div>
+
+<div class="screen" id="s3">
+  <h1>Cho tớ hỏi một câu nhé…</h1>
+  <p style="min-height:3em">Cậu có muốn đi cà phê với tớ một buổi không? ☕🥺</p>
+  <button id="yes" onclick="yes()">Đi chứ 💖</button>
+  <button id="no" onmouseover="dodge()" ontouchstart="dodge();event.preventDefault()">Không</button>
+</div>
+
+<div class="screen" id="s4">
+  <h1>Yeahhh! 🎉</h1>
+  <p id="end" style="min-height:0"></p>
+</div>
+
+<script>
+// ✏️ SỬA Ở ĐÂY: tên người ấy, lời nhắn, lời kết
+const NAME = "Minh Thảo";
+const MESSAGE = "Lâu lắm rồi mình không gặp nhau nhỉ? Dạo này cậu khỏe không? Tự nhiên hôm nay tớ nhớ tới cậu, nhớ mấy lần tụi mình cười như điên ngày xưa. Tớ làm trang nhỏ xíu này để nói một điều: tớ vẫn luôn quý cậu, và tớ muốn mình có dịp gặp lại nhau. 🌸";
+const YT_ID = "3KakOqfMKbk";  // nhạc từ YouTube (cần mạng, cần mở qua link http)
+const MUSIC_FILE = "nhac.mp3";  // hoặc điền tên file mp3 để phát offline, ví dụ "nhac.mp3"
+const ENDING = "Hihi, vậy là hẹn rồi nha! Cậu nhắn tớ giờ và chỗ cậu thích nhé. Tớ chờ đó. 💕";
+
+const $ = id => document.getElementById(id);
+document.querySelectorAll(".name").forEach(e => e.textContent = NAME);
+const go = id => {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $(id).classList.add("on");
+};
+
+/* ---------- Hạt 3D: đĩa thiên hà -> trái tim -> nổ tung ---------- */
+const cv = $("cv"), g = cv.getContext("2d");
+let W, H, dpr, unit;
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr;
+  unit = Math.min(W, H) * 0.021;  // 1 đơn vị 3D = bao nhiêu pixel
+}
+addEventListener("resize", resize); resize();
+
+const N = 9000, R = 15;
+const P = Array.from({length: N}, () => {
+  // đích 1: đĩa thiên hà (xoắn ốc)
+  const r = R * Math.sqrt(Math.random()), a = Math.random() * 6.283 + r * 0.25;
+  const disc = [r * Math.cos(a), (Math.random() - .5) * 1.2, r * Math.sin(a)];
+  // đích 2: trái tim đặc có độ dày
+  const t = Math.random() * 6.283, s = Math.random() < 0.35 ? 1 : Math.sqrt(Math.random());  // 35% hạt nằm viền cho rõ hình tim
+  const hx = 16 * Math.sin(t) ** 3;
+  const hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+  const heart = [hx * s, -(hy - 2) * s, (Math.random() - .5) * 8 * (0.3 + s * 0.7)];
+  const hue = 320 + Math.random() * 30, z = Math.random() * 2;
+  return {disc, heart, c: disc.slice(), v: null, d: 0.02 + Math.random() * 0.05, z,
+          cd: `hsl(${hue + 20},70%,${58 + z * 8}%)`, ch: `hsl(${hue},95%,${52 + z * 8}%)`};
+});
+
+let mode = "disc", yaw = 0, pitch = 1.0, vy = 0.004, vp = 0, fade = 1, T = 0;
+let down = false, moved = 0, lx = 0, ly = 0;
+
+cv.addEventListener("pointerdown", e => {
+  startMusic();
+  down = true; moved = 0; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId);
+  cv.style.cursor = "grabbing";
+});
+cv.addEventListener("pointermove", e => {
+  if (!down) return;
+  const dx = e.clientX - lx, dy = e.clientY - ly;
+  lx = e.clientX; ly = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+  yaw += dx * 0.012; pitch += dy * 0.012;
+  vy = dx * 0.002; vp = dy * 0.002;
+});
+cv.addEventListener("pointerup", () => {
+  down = false; cv.style.cursor = "grab";
+  if (moved < 8 && mode === "disc") toHeart();  // chạm (không kéo) lần đầu
+});
+
+function toHeart() {
+  mode = "heart";
+  $("hint").style.display = "none";
+  setTimeout(() => { $("ask").style.display = "block"; }, 2200);
+}
+let grow = 1;
+function later() {
+  grow = Math.min(grow + .25, 1.8);
+  $("open").style.transform = `scale(${grow})`;
+  $("asktxt").textContent = ["Mở đi mà, tớ chuẩn bị lâu lắm rồi 🥺", "Một xíu thôi, hứa không có gì đáng sợ đâu! 🥹", "Thôi mà Thảo ơi, mở đi nha 💗"][Math.min(grow * 4 - 5 | 0, 2)];
+}
+function openHeart() {
+  mode = "burst"; $("stage").style.opacity = 0;
+  P.forEach(p => {
+    const x = p.c[0], y = p.c[1], z = p.c[2], l = Math.hypot(x, y, z) || 1, sp = 0.15 + Math.random() * 0.5;
+    p.v = [x / l * sp, y / l * sp, z / l * sp];
+  });
+  cv.classList.add("bg");
+  setTimeout(() => { go("s2"); type(); }, 1500);
+}
+
+function frame() {
+  T += 0.016;
+  if (!down) {
+    yaw += vy; pitch += vp; vp *= 0.95;
+    vy += ((mode === "disc" ? 0.004 : 0.006) - vy) * 0.03;  // quay đều khi buông tay
+    if (mode !== "disc") pitch += (0.05 - pitch) * 0.03;      // trái tim dần quay về thẳng
+  }
+  if (mode === "burst") fade = Math.max(0.3, fade - 0.012);  // còn lại bụi hạt làm nền
+  const pulse = mode === "heart" ? 1 + 0.05 * Math.max(0, Math.sin(T * 3.2)) : 1;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  g.clearRect(0, 0, W, H);
+  g.globalCompositeOperation = "lighter";
+  for (const p of P) {
+    if (mode === "burst") for (let i = 0; i < 3; i++) { p.c[i] += p.v[i]; p.v[i] *= 0.985; }
+    else { const tg = mode === "disc" ? p.disc : p.heart; for (let i = 0; i < 3; i++) p.c[i] += (tg[i] - p.c[i]) * p.d; }
+    const x = p.c[0] * pulse, y = p.c[1] * pulse, z = p.c[2] * pulse;
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const k = 70 / (70 + z2);
+    const sz = (1.1 + p.z * 0.8) * k * dpr;
+    g.globalAlpha = Math.min(0.9, 0.3 + k * 0.4) * fade;
+    g.fillStyle = mode === "disc" ? p.cd : p.ch;
+    g.fillRect(W / 2 + x1 * unit * k, H * 0.42 + y2 * unit * k, sz, sz);
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+
+/* ---------- Nhạc nền (bắt đầu ở lần chạm đầu tiên) ---------- */
+let audio, yt, musicOn = false, muted = false;
+function startMusic() {
+  if (musicOn) return;
+  musicOn = true; $("snd").style.display = $("song").style.display = "block";
+  if (MUSIC_FILE) { audio = new Audio(MUSIC_FILE); audio.loop = true; audio.play().catch(() => { musicOn = false; }); return; }  // lỗi thì lần chạm sau thử lại
+  window.onYouTubeIframeAPIReady = () => yt = new YT.Player("yt", {
+    width: "1", height: "1", videoId: YT_ID,
+    playerVars: {loop: 1, playlist: YT_ID, playsinline: 1},
+    events: {onReady: e => e.target.playVideo()}
+  });
+  const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
+}
+function toggleMusic() {
+  muted = !muted; $("snd").textContent = muted ? "🔇" : "🔊";
+  if (audio) audio.muted = muted;
+  else if (yt && yt.mute) muted ? yt.mute() : yt.unMute();
+}
+
+/* ---------- Thư, câu hỏi, kết ---------- */
+function type(i = 0) {
+  $("msg").textContent = MESSAGE.slice(0, i);
+  if (i < MESSAGE.length) setTimeout(() => type(i + 1), 45);
+  else $("next").style.display = "inline-block";
+}
+let scale = 1;
+function dodge() {  // nút "Không" chạy trốn, nút "Đi chứ" to dần
+  const b = $("no");
+  b.style.position = "fixed";
+  b.style.left = Math.random() * (innerWidth - b.offsetWidth - 20) + 10 + "px";
+  b.style.top = Math.random() * (innerHeight - b.offsetHeight - 20) + 10 + "px";
+  scale = Math.min(scale + .15, 2.2);
+  $("yes").style.transform = `scale(${scale})`;
+}
+function hearts(n) {
+  for (let i = 0; i < n; i++) {
+    const h = document.createElement("div");
+    h.className = "fl";
+    h.textContent = ["💖", "💗", "💕", "🌸", "✨"][i % 5];
+    h.style.left = Math.random() * 100 + "vw";
+    h.style.fontSize = 18 + Math.random() * 30 + "px";
+    h.style.animationDuration = 3 + Math.random() * 4 + "s";
+    h.style.animationDelay = Math.random() * 2 + "s";
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 9000);
+  }
+}
+function yes() {
+  $("no").style.display = "none";
+  $("end").textContent = ENDING;
+  go("s4");
+  hearts(60);
+  setInterval(() => hearts(10), 2500);
+}
+</script>
+</body>
+</html>
