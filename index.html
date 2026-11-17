@@ -2,43 +2,45 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Gửi cậu 💌</title>
 <style>
   *{box-sizing:border-box;margin:0}
-  body{min-height:100vh;min-height:100dvh;display:grid;place-items:center;overflow:hidden;text-align:center;
+  html{height:100%;height:100vh;height:100dvh;background:radial-gradient(circle at 50% 40%,#FCE4EC,#F8BBD0 70%);overflow:hidden;overscroll-behavior:none}
+  body{height:100%;height:100vh;height:100dvh;display:grid;place-items:center;overflow:hidden;overscroll-behavior:none;text-align:center;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     font-family:"Segoe UI",system-ui,sans-serif;color:#880E4F;
     background:radial-gradient(circle at 50% 40%,#FCE4EC,#F8BBD0 70%);}
   canvas{position:fixed;inset:0;z-index:0;width:100%;height:100%;touch-action:none;cursor:grab}
   canvas.bg{pointer-events:none}
-  #stage{position:fixed;left:0;right:0;bottom:7vh;z-index:2;pointer-events:none;padding:0 20px;transition:opacity .6s}
+  #stage{position:fixed;left:env(safe-area-inset-left);right:env(safe-area-inset-right);bottom:calc(env(safe-area-inset-bottom) + clamp(12px,7vh,56px));z-index:2;pointer-events:none;padding:0 20px;transition:opacity .6s}
   #stage>*{pointer-events:auto}
-  #hint{font-size:1.05rem;opacity:.85;animation:pulse 2s infinite}
+  #hint{font-size:clamp(.9rem,2.5vw,1.05rem);opacity:.85;animation:pulse 2s infinite}
   @keyframes pulse{50%{opacity:.4}}
   #ask{display:none}
   #ask p{min-height:0;margin-bottom:6px}
-  #asktxt{position:fixed;top:80px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 40px);z-index:5;padding:8px 16px;border-radius:99px;background:#fff8;color:#880E4F;pointer-events:none}
-  .screen{display:none;position:relative;padding:24px;max-width:480px;z-index:1;animation:in .8s}
+  #asktxt{position:fixed;top:calc(env(safe-area-inset-top) + 80px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - max(env(safe-area-inset-left),env(safe-area-inset-right)) - max(env(safe-area-inset-left),env(safe-area-inset-right)) - 32px);z-index:5;padding:8px 16px;border-radius:99px;background:#fff8;color:#880E4F;pointer-events:none}
+  .screen{display:none;position:relative;width:min(520px,calc(100% - 32px));padding:clamp(16px,4vw,24px);z-index:1;animation:in .8s}
   .screen.on{display:block}
   @keyframes in{from{opacity:0;transform:translateY(20px)}}
-  h1{color:#AD1457;font-size:1.8rem;margin-bottom:12px}
-  p{line-height:1.7;font-size:1.1rem;min-height:9em}
-  button{font:inherit;font-size:1.1rem;border:0;border-radius:99px;padding:12px 28px;margin:8px;
+  h1{color:#AD1457;font-size:clamp(1.4rem,4vw,1.8rem);margin-bottom:12px}
+  p{line-height:1.7;font-size:clamp(.95rem,2.5vw,1.1rem);min-height:9em}
+  button{font:inherit;font-size:clamp(.95rem,2.5vw,1.1rem);border:0;border-radius:99px;padding:clamp(10px,2vw,12px) clamp(16px,4vw,28px);margin:clamp(4px,1.5vw,8px);
     cursor:pointer;background:#EC407A;color:#fff;box-shadow:0 0 22px #EC407A88;transition:transform .2s}
   button:hover{transform:scale(1.06)}
-  #open{position:fixed;left:50%;bottom:calc(1vh + 70px);width:160px;height:54px;margin:0;padding:0;z-index:4;transform:translateX(-50%);transition:width .4s,height .4s,bottom .4s,font-size .4s,border-radius .4s,transform .2s}
+  #open{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 1vh + 70px);width:min(160px,calc(100vw - max(env(safe-area-inset-left),env(safe-area-inset-right)) - max(env(safe-area-inset-left),env(safe-area-inset-right)) - 32px));height:54px;margin:0;padding:0;z-index:4;transform:translateX(-50%);transition:width .4s,height .4s,bottom .4s,font-size .4s,border-radius .4s,transform .2s}
   #open:hover{transform:translateX(-50%) scale(1.06)}
-  #open.fullscreen{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;border-radius:0;z-index:4;font-size:12vw;transform:none}
+  #open.fullscreen{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;margin:0;padding:0;border-radius:0;z-index:4;font-size:12vw;transform:none}
   #open.fullscreen:hover{transform:none}
-  #later{position:fixed;left:50%;bottom:1vh;width:max-content;margin:0;z-index:5;transform:translateX(-50%);background:#ffffffdd;color:#AD1457;box-shadow:none;border:1px solid #EC407A}
+  #later{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + max(1vh,10px));width:max-content;max-width:calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 20px);margin:0;z-index:5;transform:translateX(-50%);background:#ffffffdd;color:#AD1457;box-shadow:none;border:1px solid #EC407A}
   #later:hover{transform:translateX(-50%) scale(1.06)}
   #no{position:relative;z-index:4;background:#ffffffdd;color:#EC407A;box-shadow:none;border:1px solid #EC407A}
   #no:hover{transform:none}
-  #musicControls{position:fixed;top:14px;right:14px;z-index:5;display:none;align-items:center;gap:8px;padding:5px;border-radius:99px;background:#ffffffdd;color:#EC407A}
+  #musicControls{position:fixed;top:calc(env(safe-area-inset-top) + 14px);right:calc(env(safe-area-inset-right) + 14px);z-index:5;display:none;align-items:center;gap:8px;padding:5px;border-radius:99px;background:#ffffffdd;color:#EC407A}
   #snd{display:grid;place-items:center;width:40px;height:40px;padding:0;margin:0;font-size:1.2rem;background:#EC407A;color:#fff;box-shadow:none;border:0;border-radius:50%}
   #vol{width:90px;accent-color:#EC407A}
-  #s2{max-width:520px;max-height:100dvh;overflow-y:auto}
-  #letter p{min-height:0;margin-bottom:16px;font-size:1.02rem;text-align:left}
+  #s2{max-height:calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #letter p{min-height:0;margin-bottom:16px;font-size:clamp(.95rem,2.2vw,1.02rem);text-align:left;overflow-wrap:anywhere}
   #next{animation:in .8s}
   .fl{position:fixed;bottom:-40px;pointer-events:none;z-index:3;animation:up linear forwards}
   @keyframes up{to{transform:translateY(-110vh) rotate(40deg);opacity:0}}
@@ -77,21 +79,21 @@
 // ✏️ SỬA Ở ĐÂY: tên người ấy, lời nhắn, lời kết
 const NAME = "Minh Thảo";
 const LETTER = `
-Tớ biết rằng cũng đã khá lâu rồi kể từ lần cuối chúng ta gặp nhau. Có lẽ vì vậy mà khi tớ nói rằng tớ thích cậu, cậu sẽ có đôi chút bất ngờ và hoài nghi, không biết liệu tình cảm mà tớ dành cho cậu có thực sự nghiêm túc hay không.
+Tớ biết rằng cũng đã khá lâu rồi kể từ lần cuối tụi mình gặp nhau. Có lẽ vì vậy mà khi tớ nói rằng tớ thích cậu, cậu sẽ có đôi chút bất ngờ và hoài nghi, không biết liệu tình cảm mà tớ dành cho cậu có thực sự nghiêm túc hay không.
 
 Thật ra, tớ hiểu rằng chỉ bằng một vài lời nói thì rất khó để cậu có thể cảm nhận được tình cảm của tớ. Tớ nghĩ rằng tình cảm không chỉ nằm ở những lời nói, mà còn cần được thể hiện qua thời gian, sự quan tâm và những hành động nhỏ trong cuộc sống hằng ngày. Tớ hy vọng rằng qua khoảng thời gian tìm hiểu nhau sắp tới, cậu sẽ dần cảm nhận được điều đó.
 
-Tớ thực sự rất vui vì cậu đã đồng ý cho cả hai một cơ hội để tìm hiểu nhau. Tớ biết chúng ta vẫn còn nhiều điều chưa biết về đối phương, nhưng tớ mong rằng cả hai sẽ có thể thoải mái chia sẻ, lắng nghe và thấu hiểu nhau hơn. Tớ muốn được biết thêm về những sở thích, thói quen, những điều khiến cậu vui hay đôi khi là cả những chuyện buồn mà cậu muốn chia sẻ.
+Tớ thực sự rất vui vì cậu đã đồng ý cho cả hai một cơ hội để tìm hiểu nhau. Tớ biết tụi mình vẫn còn nhiều điều chưa biết về đối phương, nhưng tớ mong rằng cả hai sẽ có thể thoải mái chia sẻ, lắng nghe và thấu hiểu nhau hơn. Tớ muốn được biết thêm về những sở thích, thói quen, những điều khiến cậu vui hay đôi khi là cả những chuyện buồn mà cậu muốn chia sẻ.
 
-Tớ không mong mọi thứ phải diễn ra thật nhanh hay lúc nào cũng hoàn hảo. Tớ chỉ hy vọng cả hai có thể dành thời gian cho nhau, cùng tạo nên những kỷ niệm đẹp và dần trở nên gần gũi hơn. Tớ không biết tương lai sẽ như thế nào, nhưng ở hiện tại, tớ thực sự muốn nghiêm túc với cơ hội mà chúng ta đang có.
+Tớ không mong mọi thứ phải diễn ra thật nhanh hay lúc nào cũng hoàn hảo. Tớ chỉ hy vọng cả hai có thể dành thời gian cho nhau, cùng tạo nên những kỷ niệm đẹp và dần trở nên gần gũi hơn. Tớ không biết tương lai sẽ như thế nào, nhưng ở hiện tại, tớ thực sự muốn nghiêm túc với cơ hội mà tụi mình đang có.
 
 À, tớ cũng muốn gửi cậu một bài hát, đó là **"để dành cho em" của Dangrangto**. Khi nghe bài hát này, tớ cảm thấy có những thông điệp khá giống với điều tớ muốn chia sẻ với cậu. Đặc biệt là suy nghĩ rằng tình yêu không phải tìm kiếm một người hoàn hảo, mà là khi hai người có thể chấp nhận những điều chưa hoàn hảo của nhau, cùng thấu hiểu và cố gắng để trở nên tốt hơn.
 
-Tớ nghĩ chẳng có ai là hoàn hảo cả, bản thân tớ cũng vậy. Nhưng tớ tin rằng nếu cả hai thật sự muốn dành thời gian cho nhau, chúng ta có thể học cách hiểu nhau hơn và cùng nhau tạo nên những điều tốt đẹp.
+Tớ nghĩ chẳng có ai là hoàn hảo cả, bản thân tớ cũng vậy. Nhưng tớ tin rằng nếu cả hai thật sự muốn dành thời gian cho nhau, tụi mình có thể học cách hiểu nhau hơn và cùng nhau tạo nên những điều tốt đẹp.
 
-Cuối cùng, cảm ơn cậu vì đã cho chúng ta cơ hội này. Hy vọng rằng khoảng thời gian sắp tới sẽ có thật nhiều cuộc trò chuyện thú vị, những lần gặp gỡ đáng nhớ và những kỷ niệm thật đẹp.
+Cuối cùng, cảm ơn cậu vì đã cho tụi mình cơ hội này. Hy vọng rằng khoảng thời gian sắp tới sẽ có thật nhiều cuộc trò chuyện thú vị, những lần gặp gỡ đáng nhớ và những kỷ niệm thật đẹp.
 
-**Mong rằng bài hát này sẽ trở thành một kỷ niệm nhỏ dành riêng cho cậu và cho cả chúng ta.** ❤️
+**Mong rằng bài hát này sẽ trở thành một kỷ niệm nhỏ dành riêng cho cậu và cho cả tụi mình.** ❤️
 `;
 const MUSIC_FILE = "nhac.mp3";
 const TYPE_EFFECT = true;   // true = chữ chạy từ từ, false = hiện hết ngay (để test)
@@ -105,13 +107,19 @@ const go = id => {
 
 /* ---------- Hạt 3D: đĩa thiên hà -> trái tim -> nổ tung ---------- */
 const cv = $("cv"), g = cv.getContext("2d");
-let W, H, dpr, unit;
+let W, H, dpr, unit, heartCenterY;
 function resize() {
   dpr = Math.min(devicePixelRatio || 1, 2);
   W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr;
-  unit = Math.min(W, H) * 0.021;  // 1 đơn vị 3D = bao nhiêu pixel
+  const safeBottom = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+  const landscape = innerWidth > innerHeight;
+  const heartArea = Math.max(H * .25, H - (180 + safeBottom) * dpr);
+  unit = Math.min(W / 44, H / 40, landscape ? heartArea / 40 : Infinity);
+  heartCenterY = landscape ? heartArea / 2 : H * .42;
 }
 addEventListener("resize", resize); resize();
+addEventListener("orientationchange", resize);
+window.visualViewport?.addEventListener("resize", resize);
 
 const N = 14000, R = 15;
 const P = Array.from({length: N}, () => {
@@ -181,9 +189,9 @@ function later() {
     $("later").style.display = "none";
   } else {
     const step = grow / messages.length;
-    open.style.width = `calc(${160 * (1 - step)}px + ${100 * step}vw)`;
-    open.style.height = `calc(${54 * (1 - step)}px + ${100 * step}dvh)`;
-    open.style.bottom = `calc(${1 - step}vh + ${70 * (1 - step)}px)`;
+    open.style.width = `min(calc(${160 * (1 - step)}px + ${100 * step}vw), calc(100vw - max(env(safe-area-inset-left), env(safe-area-inset-right)) - max(env(safe-area-inset-left), env(safe-area-inset-right)) - 20px))`;
+    open.style.height = `min(calc(${54 * (1 - step)}px + ${100 * step}dvh), calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${1 - step}vh - ${70 * (1 - step)}px))`;
+    open.style.bottom = `calc(env(safe-area-inset-bottom) + ${1 - step}vh + ${70 * (1 - step)}px)`;
     open.style.fontSize = `calc(${1.1 * (1 - step)}rem + ${12 * step}vw)`;
     open.style.borderRadius = `${99 * (1 - step)}px`;
   }
@@ -224,7 +232,7 @@ function frame() {
     const sz = (1.4 + p.z * 0.9) * k * dpr;
     g.globalAlpha = Math.min(0.95, 0.55 + k * 0.35) * fade;
     g.fillStyle = mode === "disc" ? p.cd : p.ch;
-    g.fillRect(W / 2 + x1 * unit * k, H * 0.42 + y2 * unit * k, sz, sz);
+    g.fillRect(W / 2 + x1 * unit * k, heartCenterY + y2 * unit * k, sz, sz);
   }
   requestAnimationFrame(frame);
 }
@@ -311,15 +319,22 @@ function dodgeNo(event) {
   noDodges++;
   yes.style.transform = `scale(${Math.min(1 + noDodges * .06, 1.6)})`;
 
-  const margin = 10;
-  const maxX = Math.max(0, innerWidth - no.offsetWidth);
-  const maxY = Math.max(0, innerHeight - no.offsetHeight);
-  const minX = Math.min(margin, maxX), minY = Math.min(margin, maxY);
+  const margin = 10, bodyStyle = getComputedStyle(document.body);
+  const safeLeft = parseFloat(bodyStyle.paddingLeft) || 0;
+  const safeRight = parseFloat(bodyStyle.paddingRight) || 0;
+  const safeTop = parseFloat(bodyStyle.paddingTop) || 0;
+  const safeBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+  const viewportMaxX = Math.max(0, innerWidth - no.offsetWidth);
+  const viewportMaxY = Math.max(0, innerHeight - no.offsetHeight);
+  const minX = Math.min(viewportMaxX, safeLeft + margin);
+  const minY = Math.min(viewportMaxY, safeTop + margin);
+  const maxX = Math.max(minX, Math.min(viewportMaxX, innerWidth - safeRight - margin - no.offsetWidth));
+  const maxY = Math.max(minY, Math.min(viewportMaxY, innerHeight - safeBottom - margin - no.offsetHeight));
   const yesBox = yes.getBoundingClientRect();
   let x, y;
   for (let attempt = 0; attempt < 20; attempt++) {
-    x = minX + Math.random() * (Math.max(minX, maxX - margin) - minX);
-    y = minY + Math.random() * (Math.max(minY, maxY - margin) - minY);
+    x = minX + Math.random() * (maxX - minX);
+    y = minY + Math.random() * (maxY - minY);
     if (x + no.offsetWidth < yesBox.left || x > yesBox.right ||
         y + no.offsetHeight < yesBox.top || y > yesBox.bottom) break;
   }
